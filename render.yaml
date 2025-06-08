@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: bun
+    runtime: docker
+    https://github.com/jlipsky14167/api-mascotas
+    plan: starter
+    autoDeploy: false
