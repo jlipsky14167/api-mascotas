@@ -1,0 +1,126 @@
+# Node.js + MySQL REST API with Docker Compose
+
+This project contains:
+
+- A Node.js REST API using Express.js (in `src/index.js`)
+- A MySQL database
+- Docker Compose setup for both services
+
+## Usage
+
+1. Build and start the services:
+   ```bash
+   docker compose up --build
+   ```
+2. The API will be available at http://localhost:3000
+3. MySQL will be available at localhost:3306 (see `docker-compose.yml` for credentials)
+
+## Development
+
+- API code is in `src/index.js`.
+- Environment variables for DB connection are set in `docker-compose.yml`.
+
+## Stopping the services
+
+```bash
+docker compose down
+```
+
+# API de Gestión de Mascotas y Eventos
+
+Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, razas y usuarios, así como consultar y actualizar información relevante para la gestión de mascotas.
+
+## Endpoints principales
+
+### Mascotas
+
+- **Registrar mascota**
+  - `POST /pets`
+  - Body: `{ main_owner_id, vet_id, breed_id }`
+  - Respuesta: mascota creada
+
+### Eventos (vacunas, desparasitaciones, citas, compras, etc)
+
+- **Registrar evento**
+
+  - `POST /events`
+  - Body: `{ event_type_id, body, pet_id, status, alarm_at }`
+  - Respuesta: evento creado
+  - Nota: El campo `alarm_made` es privado y no debe ser enviado ni mostrado al usuario.
+
+- **Próximo evento de tipo (vacuna/desparasitacion) para mascota**
+
+  - `GET /pets/:pet_id/next-event/:event_type_id`
+  - Respuesta: evento más próximo (o vacío)
+
+- **Registrar próxima compra de alimento**
+
+  - `POST /pets/:pet_id/next-food-purchase`
+  - Body: `{ body, status, alarm_at }`
+  - Respuesta: evento creado (event_type_id=5)
+  - Nota: El campo `alarm_made` es privado y no debe ser enviado ni mostrado al usuario.
+
+- **Ajustar fecha de compra de alimento**
+
+  - `PUT /events/:event_id`
+  - Body: `{ alarm_at }`
+  - Respuesta: evento actualizado
+
+- **Histórico de eventos de una mascota**
+  - `GET /pets/:pet_id/events`
+  - Respuesta: lista de eventos
+
+### Usuarios
+
+- **Login por correo electrónico**
+  - `POST /login`
+  - Body: `{ email }`
+  - Respuesta: usuario encontrado o error
+
+### Razas
+
+- **Listar razas**
+  - `GET /breeds`
+  - Respuesta: lista de razas
+
+## Notas
+
+- Los tipos de evento (`event_type_id`) deben estar definidos en la tabla `event_types`.
+- Los endpoints de eventos permiten registrar vacunas, desparasitaciones, citas médicas, resultados de laboratorio, recetas médicas y compras de alimento, diferenciados por el `event_type_id`.
+- El campo `alarm_at` permite programar recordatorios para eventos futuros.
+- El campo `alarm_made` es privado y solo lo gestiona el sistema para el control interno de recordatorios.
+
+## Ejemplo de uso
+
+Registrar una mascota:
+
+```json
+POST /pets
+{
+  "main_owner_id": 1,
+  "vet_id": 2,
+  "breed_id": 3
+}
+```
+
+Registrar una vacuna:
+
+```json
+POST /events
+{
+  "event_type_id": 1, // ID para vacuna
+  "body": "Vacuna antirrábica",
+  "pet_id": 1,
+  "status": "completado",
+  "alarm_at": "2025-07-01T10:00:00Z",
+  "alarm_made": false
+}
+```
+
+## Estructura de la base de datos
+
+Ver archivo `init.sql` para la definición de tablas y relaciones.
+
+---
+
+¿Necesitas ejemplos de respuesta, detalles de cada campo o autenticación avanzada? ¡Avísame!
