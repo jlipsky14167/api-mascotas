@@ -45,29 +45,35 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
 ## Endpoints principales
 
 ### Mascotas
+
 - **Registrar mascota**
   - `POST /pets`
   - Body: `{ main_owner_id, vet_id, breed_id }`
   - Respuesta: mascota creada
 
 ### Eventos (vacunas, desparasitaciones, citas, compras, etc)
+
 - **Registrar evento**
+
   - `POST /events`
   - Body: `{ event_type_id, body, pet_id, status, alarm_at }`
   - Respuesta: evento creado
   - Nota: El campo `alarm_made` es privado y no debe ser enviado ni mostrado al usuario.
 
 - **Próximo evento de tipo (vacuna/desparasitacion) para mascota**
+
   - `GET /pets/:pet_id/next-event/:event_type_id`
   - Respuesta: evento más próximo (o vacío)
 
 - **Registrar próxima compra de alimento**
+
   - `POST /pets/:pet_id/next-food-purchase`
   - Body: `{ body, status, alarm_at }`
   - Respuesta: evento creado (event_type_id=5)
   - Nota: El campo `alarm_made` es privado y no debe ser enviado ni mostrado al usuario.
 
 - **Ajustar fecha de compra de alimento**
+
   - `PUT /events/:event_id`
   - Body: `{ alarm_at }`
   - Respuesta: evento actualizado
@@ -77,17 +83,20 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
   - Respuesta: lista de eventos
 
 ### Usuarios
+
 - **Login por correo electrónico**
   - `POST /login`
   - Body: `{ email }`
   - Respuesta: usuario encontrado o error
 
 ### Razas
+
 - **Listar razas**
   - `GET /breeds`
   - Respuesta: lista de razas
 
 ## Notas
+
 - Los tipos de evento (`event_type_id`) deben estar definidos en la tabla `event_types`.
 - Los endpoints de eventos permiten registrar vacunas, desparasitaciones, citas médicas, resultados de laboratorio, recetas médicas y compras de alimento, diferenciados por el `event_type_id`.
 - El campo `alarm_at` permite programar recordatorios para eventos futuros.
@@ -96,6 +105,7 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
 ## Ejemplo de uso
 
 Registrar una mascota:
+
 ```json
 POST /pets
 {
@@ -106,6 +116,7 @@ POST /pets
 ```
 
 Registrar una vacuna:
+
 ```json
 POST /events
 {
