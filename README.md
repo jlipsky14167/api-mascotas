@@ -1,26 +1,38 @@
-# Node.js + MySQL REST API with Docker Compose
+# Bun + Hono REST API con PostgreSQL
 
-This project contains:
+Este proyecto contiene:
 
-- A Node.js REST API using Express.js (in `src/index.js`)
-- A MySQL database
-- Docker Compose setup for both services
+- Una API REST desarrollada con Bun y Hono (en `src/index.ts`)
+- Una base de datos PostgreSQL
+- Docker Compose para levantar la base de datos
 
-## Usage
+## Uso
 
-1. Build and start the services:
+1. Instala las dependencias:
    ```bash
-   docker compose up --build
+   bun install
    ```
-2. The API will be available at http://localhost:3000
-3. MySQL will be available at localhost:3306 (see `docker-compose.yml` for credentials)
+2. Levanta la base de datos PostgreSQL:
+   ```bash
+   docker compose up -d
+   ```
+3. Inicia la API en modo desarrollo:
+   ```bash
+   bun run dev
+   ```
+   O en modo producción (compilado):
+   ```bash
+   bun start
+   ```
+4. La API estará disponible en http://localhost:3000
 
-## Development
+## Desarrollo
 
-- API code is in `src/index.js`.
-- Environment variables for DB connection are set in `docker-compose.yml`.
+- El código fuente de la API está en `src/index.ts`.
+- Las variables de entorno para la conexión a la base de datos están en `docker-compose.yml`.
+- El esquema de la base de datos se inicializa automáticamente desde `init.sql` al levantar el contenedor de PostgreSQL.
 
-## Stopping the services
+## Parar los servicios
 
 ```bash
 docker compose down
@@ -33,35 +45,29 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
 ## Endpoints principales
 
 ### Mascotas
-
 - **Registrar mascota**
   - `POST /pets`
   - Body: `{ main_owner_id, vet_id, breed_id }`
   - Respuesta: mascota creada
 
 ### Eventos (vacunas, desparasitaciones, citas, compras, etc)
-
 - **Registrar evento**
-
   - `POST /events`
   - Body: `{ event_type_id, body, pet_id, status, alarm_at }`
   - Respuesta: evento creado
   - Nota: El campo `alarm_made` es privado y no debe ser enviado ni mostrado al usuario.
 
 - **Próximo evento de tipo (vacuna/desparasitacion) para mascota**
-
   - `GET /pets/:pet_id/next-event/:event_type_id`
   - Respuesta: evento más próximo (o vacío)
 
 - **Registrar próxima compra de alimento**
-
   - `POST /pets/:pet_id/next-food-purchase`
   - Body: `{ body, status, alarm_at }`
   - Respuesta: evento creado (event_type_id=5)
   - Nota: El campo `alarm_made` es privado y no debe ser enviado ni mostrado al usuario.
 
 - **Ajustar fecha de compra de alimento**
-
   - `PUT /events/:event_id`
   - Body: `{ alarm_at }`
   - Respuesta: evento actualizado
@@ -71,20 +77,17 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
   - Respuesta: lista de eventos
 
 ### Usuarios
-
 - **Login por correo electrónico**
   - `POST /login`
   - Body: `{ email }`
   - Respuesta: usuario encontrado o error
 
 ### Razas
-
 - **Listar razas**
   - `GET /breeds`
   - Respuesta: lista de razas
 
 ## Notas
-
 - Los tipos de evento (`event_type_id`) deben estar definidos en la tabla `event_types`.
 - Los endpoints de eventos permiten registrar vacunas, desparasitaciones, citas médicas, resultados de laboratorio, recetas médicas y compras de alimento, diferenciados por el `event_type_id`.
 - El campo `alarm_at` permite programar recordatorios para eventos futuros.
@@ -93,7 +96,6 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
 ## Ejemplo de uso
 
 Registrar una mascota:
-
 ```json
 POST /pets
 {
@@ -104,7 +106,6 @@ POST /pets
 ```
 
 Registrar una vacuna:
-
 ```json
 POST /events
 {
@@ -112,8 +113,7 @@ POST /events
   "body": "Vacuna antirrábica",
   "pet_id": 1,
   "status": "completado",
-  "alarm_at": "2025-07-01T10:00:00Z",
-  "alarm_made": false
+  "alarm_at": "2025-07-01T10:00:00Z"
 }
 ```
 
