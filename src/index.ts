@@ -41,13 +41,29 @@ try {
   process.exit(1);
 }
 
+// Middleware CORS (permitir cualquier origen)
+app.use('*', async (c, next) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (c.req.method === 'OPTIONS') {
+    c.status(204);
+    return c.text('');
+  }
+  return await next();
+});
+
 // US-1: Registrar mis diferentes mascotas
 app.post('/pets', async (c: Context) => {
   try {
-    const { name, main_owner_id, vet_id, breed_id } = await c.req.json();
+    const { name, main_owner_id, vet_id, breed_id, birthdate } =
+      await c.req.json();
+    if (!birthdate) {
+      return c.json({ error: 'El campo birthdate es obligatorio' }, 400);
+    }
     const result = await pool.query(
-      'INSERT INTO pets (name, main_owner_id, vet_id, created_at, breed_id) VALUES ($1, $2, $3, NOW(), $4) RETURNING *',
-      [name, main_owner_id, vet_id, breed_id]
+      'INSERT INTO pets (name, main_owner_id, vet_id, created_at, breed_id, birthdate) VALUES ($1, $2, $3, NOW(), $4, $5) RETURNING *',
+      [name, main_owner_id, vet_id, breed_id, birthdate]
     );
     return c.json(result.rows[0]);
   } catch (err: any) {
@@ -304,6 +320,94 @@ app.get('/user-types', async (c: Context) => {
     console.error('DB error /user-types (GET):', err.message);
     return c.json(
       { error: 'Error al listar tipos de usuario', details: err.message },
+      500
+    );
+  }
+});
+
+// Endpoint: Próximos eventos de una mascota
+app.get('/pets/:pet_id/upcoming-events', async (c: Context) => {
+  try {
+    const { pet_id } = c.req.param();
+    const result = await pool.query(
+      'SELECT * FROM events WHERE pet_id = $1 AND alarm_at > NOW() ORDER BY alarm_at ASC',
+      [pet_id]
+    );
+    return c.json(result.rows);
+  } catch (err: any) {
+    console.error('DB error /pets/:pet_id/upcoming-events:', err.message);
+    return c.json(
+      { error: 'Error al consultar próximos eventos', details: err.message },
+      500
+    );
+  }
+});
+
+// Endpoint: Próximos eventos globales (opcional: filtrar por mascota)
+// Solo eventos dentro de los próximos 30 días
+app.get('/upcoming-events', async (c: Context) => {
+  try {
+    const { pet_id, limit } = c.req.query();
+    let query =
+      "SELECT * FROM events WHERE alarm_at > NOW() AND alarm_at <= NOW() + INTERVAL '30 days' ORDER BY alarm_at ASC";
+    const params: any[] = [];
+    if (pet_id) {
+      query =
+        "SELECT * FROM events WHERE pet_id = $1 AND alarm_at > NOW() AND alarm_at <= NOW() + INTERVAL '30 days' ORDER BY alarm_at ASC";
+      params.push(pet_id);
+    }
+    if (limit) {
+      query += pet_id ? ' LIMIT $2' : ' LIMIT $1';
+      params.push(Number(limit));
+    }
+    const result = await pool.query(query, params);
+    return c.json(result.rows);
+  } catch (err: any) {
+    console.error('DB error /upcoming-events:', err.message);
+    return c.json(
+      { error: 'Error al consultar próximos eventos', details: err.message },
+      500
+    );
+  }
+});
+
+// Endpoint: Resumen de mascotas
+app.get('/pets/summary', async (c: Context) => {
+  try {
+    // Total de mascotas
+    const totalResult = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM pets'
+    );
+    const total = totalResult.rows[0]?.total || 0;
+
+    // Media de edad en años (usando birthdate)
+    const avgResult = await pool.query(
+      'SELECT AVG(EXTRACT(YEAR FROM AGE(NOW(), birthdate))) AS avg_years FROM pets'
+    );
+    const mediaEdad = avgResult.rows[0]?.avg_years
+      ? Number(avgResult.rows[0].avg_years)
+      : 0;
+
+    // Cachorros: menores de 2 años
+    const cachorrosResult = await pool.query(
+      "SELECT pet_id, name, birthdate, breed_id, main_owner_id, vet_id FROM pets WHERE AGE(NOW(), birthdate) < INTERVAL '2 years'"
+    );
+    const listaCachorros = cachorrosResult.rows;
+
+    // Porcentaje de cachorros
+    const porcentajeCachorros =
+      total > 0 ? (listaCachorros.length / total) * 100 : 0;
+
+    return c.json({
+      total,
+      mediaEdad,
+      porcentajeCachorros,
+      listaCachorros
+    });
+  } catch (err: any) {
+    console.error('DB error /pets/summary:', err.message);
+    return c.json(
+      { error: 'Error al consultar resumen de mascotas', details: err.message },
       500
     );
   }

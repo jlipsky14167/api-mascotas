@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS pets (
   main_owner_id INTEGER REFERENCES users(user_id),
   vet_id INTEGER REFERENCES users(user_id),
   created_at TIMESTAMP,
-  breed_id INTEGER REFERENCES breeds(breed_id)
+  breed_id INTEGER REFERENCES breeds(breed_id),
+  birthdate DATE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS events (

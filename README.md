@@ -48,7 +48,7 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
 
 - **Registrar mascota**
   - `POST /pets`
-  - Body: `{ main_owner_id, vet_id, breed_id }`
+  - Body: `{ name, main_owner_id, vet_id, breed_id, birthdate }`
   - Respuesta: mascota creada
 
 ### Eventos (vacunas, desparasitaciones, citas, compras, etc)
@@ -79,8 +79,13 @@ Esta API permite registrar mascotas, eventos veterinarios, compras de alimento, 
   - Respuesta: evento actualizado
 
 - **Histórico de eventos de una mascota**
+
   - `GET /pets/:pet_id/events`
   - Respuesta: lista de eventos
+
+- **Próximos eventos de una mascota**
+  - `GET /pets/:pet_id/upcoming-events`
+  - Respuesta: lista de eventos futuros ordenados por fecha
 
 ### Usuarios
 
@@ -109,9 +114,11 @@ Registrar una mascota:
 ```json
 POST /pets
 {
+  "name": "Max",
   "main_owner_id": 1,
   "vet_id": 2,
-  "breed_id": 3
+  "breed_id": 3,
+  "birthdate": "2020-05-01"
 }
 ```
 

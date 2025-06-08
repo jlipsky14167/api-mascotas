@@ -47,7 +47,7 @@ curl http://localhost:3000/user-types
 ```bash
 curl -X POST http://localhost:3000/pets \
   -H "Content-Type: application/json" \
-  -d '{"main_owner_id":1,"vet_id":2,"breed_id":3}'
+  -d '{"name":"Max","main_owner_id":1,"vet_id":2,"breed_id":3,"birthdate":"2020-05-01"}'
 ```
 
 ## Registrar vacuna (evento tipo vacuna)
@@ -98,4 +98,10 @@ curl -X POST http://localhost:3000/login \
 
 ```bash
 curl http://localhost:3000/breeds
+```
+
+## Próximos eventos de una mascota
+
+```bash
+curl http://localhost:3000/pets/1/upcoming-events
 ```
