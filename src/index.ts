@@ -423,6 +423,68 @@ app.use('*', async (c, next) => {
   return await next();
 });
 
+// Listar mascotas
+app.get('/pets', async (c: Context) => {
+  try {
+    const result = await pool.query('SELECT * FROM pets ORDER BY pet_id ASC');
+    return c.json(result.rows);
+  } catch (err: any) {
+    console.error('DB error /pets (GET):', err.message);
+    return c.json(
+      { error: 'Error al listar mascotas', details: err.message },
+      500
+    );
+  }
+});
+
+// Editar mascota
+app.put('/pets/:pet_id', async (c: Context) => {
+  try {
+    const { pet_id } = c.req.param();
+    const { name, main_owner_id, vet_id, breed_id, birthdate } =
+      await c.req.json();
+    if (!name || !main_owner_id || !vet_id || !breed_id || !birthdate) {
+      return c.json({ error: 'Todos los campos son obligatorios' }, 400);
+    }
+    const result = await pool.query(
+      'UPDATE pets SET name = $1, main_owner_id = $2, vet_id = $3, breed_id = $4, birthdate = $5 WHERE pet_id = $6 RETURNING *',
+      [name, main_owner_id, vet_id, breed_id, birthdate, pet_id]
+    );
+    if (result.rows.length > 0) {
+      return c.json(result.rows[0]);
+    } else {
+      return c.json({ error: 'Mascota no encontrada' }, 404);
+    }
+  } catch (err: any) {
+    console.error('DB error /pets/:pet_id (PUT):', err.message);
+    return c.json(
+      { error: 'Error al editar mascota', details: err.message },
+      500
+    );
+  }
+});
+
+// Endpoint: Detalle de mascota
+app.get('/pets/:pet_id', async (c: Context) => {
+  try {
+    const { pet_id } = c.req.param();
+    const result = await pool.query('SELECT * FROM pets WHERE pet_id = $1', [
+      pet_id
+    ]);
+    if (result.rows.length > 0) {
+      return c.json(result.rows[0]);
+    } else {
+      return c.json({ error: 'Mascota no encontrada' }, 404);
+    }
+  } catch (err: any) {
+    console.error('DB error /pets/:pet_id (GET):', err.message);
+    return c.json(
+      { error: 'Error al obtener mascota', details: err.message },
+      500
+    );
+  }
+});
+
 app.fire();
 
 export default {
