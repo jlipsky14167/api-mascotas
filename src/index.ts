@@ -337,18 +337,26 @@ app.get('/pets/:pet_id/upcoming-events', async (c: Context) => {
 });
 
 // Endpoint: Próximos eventos globales (opcional: filtrar por mascota)
-// Solo eventos dentro de los próximos 30 días
+// Solo eventos dentro de los próximos 30 días, con join a tipo de evento y mascota
 app.get('/upcoming-events', async (c: Context) => {
   try {
     const { pet_id, limit } = c.req.query();
-    let query =
-      "SELECT * FROM events WHERE alarm_at > NOW() AND alarm_at <= NOW() + INTERVAL '30 days' ORDER BY alarm_at ASC";
+    let query = `
+      SELECT 
+        e.*, 
+        et.title AS event_type_name, 
+        p.name AS pet_name 
+      FROM events e
+      LEFT JOIN event_types et ON e.event_type_id = et.event_type_id
+      LEFT JOIN pets p ON e.pet_id = p.pet_id
+      WHERE e.alarm_at > NOW() AND e.alarm_at <= NOW() + INTERVAL '30 days'
+    `;
     const params: any[] = [];
     if (pet_id) {
-      query =
-        "SELECT * FROM events WHERE pet_id = $1 AND alarm_at > NOW() AND alarm_at <= NOW() + INTERVAL '30 days' ORDER BY alarm_at ASC";
+      query += ' AND e.pet_id = $1';
       params.push(pet_id);
     }
+    query += ' ORDER BY e.alarm_at ASC';
     if (limit) {
       query += pet_id ? ' LIMIT $2' : ' LIMIT $1';
       params.push(Number(limit));
@@ -532,7 +540,14 @@ app.get('/events', async (c: Context) => {
     const lim = Math.max(1, Math.min(Number(limit) || 10, 100));
     const off = Math.max(0, Number(offset) || 0);
     const result = await pool.query(
-      'SELECT * FROM events ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      `SELECT
+        e.*, 
+        et.title AS event_type_name, 
+        p.name AS pet_name 
+      FROM events e
+      LEFT JOIN event_types et ON e.event_type_id = et.event_type_id
+      LEFT JOIN pets p ON e.pet_id = p.pet_id
+      ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [lim, off]
     );
     const totalResult = await pool.query(
