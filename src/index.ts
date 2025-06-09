@@ -437,6 +437,36 @@ app.get('/pets', async (c: Context) => {
   }
 });
 
+// Endpoint: Buscar mascotas por nombre (para select asincrónico)
+app.get('/pets/searchByName', async (c: Context) => {
+  try {
+    const { search } = c.req.query();
+    let query = '';
+    let params: any[] = [];
+    if (search) {
+      query =
+        'SELECT * FROM pets WHERE LOWER(name) LIKE $1 ORDER BY pet_id ASC';
+      params = [`%${search.toLowerCase()}%`];
+    } else {
+      return c.json(
+        {
+          error: 'Error al listar mascotas',
+          details: 'El parámetro "search" es obligatorio'
+        },
+        500
+      );
+    }
+    const result = await pool.query(query, params);
+    return c.json(result.rows);
+  } catch (err: any) {
+    console.error('DB error /pets (GET):', err.message);
+    return c.json(
+      { error: 'Error al listar mascotas', details: err.message },
+      500
+    );
+  }
+});
+
 // Editar mascota
 app.put('/pets/:pet_id', async (c: Context) => {
   try {
@@ -480,6 +510,70 @@ app.get('/pets/:pet_id', async (c: Context) => {
     console.error('DB error /pets/:pet_id (GET):', err.message);
     return c.json(
       { error: 'Error al obtener mascota', details: err.message },
+      500
+    );
+  }
+});
+
+// Listar eventos con paginación
+app.get('/events', async (c: Context) => {
+  try {
+    const { limit, offset } = c.req.query();
+    const lim = Math.max(1, Math.min(Number(limit) || 10, 100));
+    const off = Math.max(0, Number(offset) || 0);
+    const result = await pool.query(
+      'SELECT * FROM events ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [lim, off]
+    );
+    const totalResult = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM events'
+    );
+    return c.json({
+      rows: result.rows,
+      total: totalResult.rows[0]?.total || 0
+    });
+  } catch (err: any) {
+    console.error('DB error /events (GET):', err.message);
+    return c.json(
+      { error: 'Error al listar eventos', details: err.message },
+      500
+    );
+  }
+});
+
+// Endpoint: Detalle de evento
+app.get('/events/:event_id', async (c: Context) => {
+  try {
+    const { event_id } = c.req.param();
+    const result = await pool.query(
+      'SELECT * FROM events WHERE event_id = $1',
+      [event_id]
+    );
+    if (result.rows.length > 0) {
+      return c.json(result.rows[0]);
+    } else {
+      return c.json({ error: 'Evento no encontrado' }, 404);
+    }
+  } catch (err: any) {
+    console.error('DB error /events/:event_id (GET):', err.message);
+    return c.json(
+      { error: 'Error al obtener evento', details: err.message },
+      500
+    );
+  }
+});
+
+// Endpoint: Listar tipos de evento
+app.get('/event_types', async (c: Context) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM event_types ORDER BY event_type_id ASC'
+    );
+    return c.json(result.rows);
+  } catch (err: any) {
+    console.error('DB error /event_types (GET):', err.message);
+    return c.json(
+      { error: 'Error al listar tipos de evento', details: err.message },
       500
     );
   }
