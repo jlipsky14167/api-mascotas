@@ -5,13 +5,6 @@ import { Context } from 'hono';
 const app = new Hono();
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
-console.log(
-  process.env.DB_HOST,
-  process.env.DB_USER,
-  process.env.DB_NAME,
-  process.env.DB_PORT
-);
-
 // PostgreSQL connection pool
 let pool: Pool;
 try {
@@ -423,10 +416,27 @@ app.use('*', async (c, next) => {
   return await next();
 });
 
-// Listar mascotas
+// Listar mascotas con nombres de dueño, veterinario y raza
 app.get('/pets', async (c: Context) => {
   try {
-    const result = await pool.query('SELECT * FROM pets ORDER BY pet_id ASC');
+    const result = await pool.query(`
+      SELECT 
+        p.pet_id, 
+        p.name, 
+        p.birthdate, 
+        p.created_at,
+        p.main_owner_id,
+        owner.username AS main_owner_name,
+        p.vet_id,
+        vet.username AS vet_name,
+        p.breed_id,
+        b.name_es AS breed_name
+      FROM pets p
+      LEFT JOIN users owner ON p.main_owner_id = owner.user_id
+      LEFT JOIN users vet ON p.vet_id = vet.user_id
+      LEFT JOIN breeds b ON p.breed_id = b.breed_id
+      ORDER BY p.pet_id ASC
+    `);
     return c.json(result.rows);
   } catch (err: any) {
     console.error('DB error /pets (GET):', err.message);
